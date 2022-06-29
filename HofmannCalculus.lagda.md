@@ -1,5 +1,5 @@
 ```agda
-module HoffmanCalculus where
+module HofmannCalculus where
 ```
 
 ```agda
