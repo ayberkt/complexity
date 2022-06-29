@@ -67,3 +67,13 @@ data _<∶_ : Typ → Typ → Set where
   s-arr   : (A₁ A₂ B₁ B₂ : Typ) (a a′ : Aspect)
           → B₁ <∶ A₁ → A₂ <∶ B₂ → a ≼ a′ → Arrow a A₁ A₂ <∶ Arrow a′ B₁ B₂
 ```
+
+```agda
+private
+  variable
+    Γ   : Context
+    A B : Typ
+
+data _⊢_ : Context → Typ → Set where
+  var : Γ ∋ A → Γ ⊢ A
+```
