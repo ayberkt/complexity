@@ -12,7 +12,7 @@ Computation course.
 module PRF where
 
 open import Data.Nat
-open import Data.Bool hiding (_≤_; _≤?_)
+open import Data.Bool hiding (_≤_; _≤?_; _<?_; _<_)
 open import Data.Nat.Properties
 open import Data.Empty
 open import Data.Unit hiding (_≤_)
@@ -122,9 +122,109 @@ pa-eq₁ _ = refl
 pa-eq₂ : (m n : ℕ)
        → pa (suc m) (suc n) ≡ pa m (pa (suc m) n)
 pa-eq₂ _ _ = refl
+
+pa-addition : (n : ℕ) → pa 1 n ≡ suc (suc n)
+pa-addition zero    = refl
+pa-addition (suc n) = pa 1 (suc n)       ≡⟨ refl                        ⟩
+                      pa 0 (pa 1 n)      ≡⟨ cong (pa 0) (pa-addition n) ⟩
+                      pa 0 (suc (suc n)) ≡⟨ refl                        ⟩
+                      suc (suc (suc n)) ∎
 ```
 
 ```agda
 ack : Vec ℕ 2 → ℕ
 ack ((nil , m) , n) = pa m n
+```
+
+## Majorisation
+
+```agda
+_⋎_ : ℕ → ℕ → ℕ
+m ⋎ n with m <? n
+(m ⋎ n) | false because q = m
+(m ⋎ n) | true  because q = n
+```
+
+```agda
+0-right-unit-for-⋎ : (n : ℕ) → n ⋎ 0 ≡ n
+0-right-unit-for-⋎ zero = refl
+0-right-unit-for-⋎ (suc n) = refl
+
+⋎-upper-left : (m n : ℕ) → m ≤ (m ⋎ n)
+⋎-upper-left m n with m <? n
+⋎-upper-left m n | false because p = ≤-reflexive refl
+⋎-upper-left m n | yes p           = <⇒≤ p
+
+⋎-upper-right : (m n : ℕ) → n ≤ (m ⋎ n)
+⋎-upper-right m n with m <? n
+⋎-upper-right m n | no p           = ≮⇒≥ p
+⋎-upper-right m n | true because p = ≤-reflexive refl
+
+suc-preserves-⋎ : (m n : ℕ) → suc m ⋎ suc n ≤ suc (m ⋎ n)
+suc-preserves-⋎ zero    zero    = ≤-reflexive refl
+suc-preserves-⋎ zero    (suc n) = {!!}
+suc-preserves-⋎ (suc m) n       = {!!}
+```
+
+```agda
+max : {n : ℕ} → Vec ℕ n → ℕ
+max nil      = 0
+max (ns , n) = n ⋎ max ns
+```
+
+```agda
+max-gives-upper-bound : {n : ℕ} → (ns : Vec ℕ n) → (i : Fin n) → ns [ i ] ≤ max ns
+max-gives-upper-bound (ns , n) zero    = ⋎-upper-left n (max ns)
+max-gives-upper-bound (ns , n) (suc i) = ≤-trans IH (⋎-upper-right n (max ns))
+ where
+  IH : (ns [ i ]) ≤ max ns
+  IH = max-gives-upper-bound ns i
+```
+
+```agda
+_≺_ : {n : ℕ} → (Vec ℕ n → ℕ) → (Vec ℕ 2 → ℕ) → Set
+_≺_ {n = n} f g = Σ[ m ∈ ℕ ] ((ns : Vec ℕ n) → f ns < g ((nil , m) , max ns))
+```
+
+**Lemma**: the Ackermann function majorises every primitive recursive function.
+
+```agda
+majorisation-zero : ⟦ zero ⟧ ≺ ack
+majorisation-zero = 0 , †
+  where
+    † : (ns : Vec ℕ 0) → ⟦ zero ⟧ ns < ack ((nil , 0) , max ns)
+    † nil = s≤s z≤n
+
+open import Relation.Binary.Reasoning.StrictPartialOrder <-strictPartialOrder
+  renaming (_∎ to _■)
+
+majorisation-suc : ⟦ suc ⟧ ≺ ack
+majorisation-suc = 1 , †
+  where
+    † : (ns : Vec ℕ 1) → ⟦ suc ⟧ ns < pa 1 (max ns)
+    † (nil , n) =
+      begin-strict
+        suc n        <⟨ n<1+n (suc n)       ⟩
+        suc (suc n)  ≈⟨ sym (pa-addition n) ⟩
+        pa 1 n
+      ■
+
+majorisation-proj : {n : ℕ} → (i : Fin n) → ⟦ proj i ⟧ ≺ ack
+majorisation-proj {n = n} zero    = 0 , †
+  where
+    † : (ns : Vec ℕ (suc _)) → ⟦ proj zero ⟧ ns < ack ((nil , 0) , max ns)
+    † (ns , n) = begin-strict
+                   n                     <⟨ {!!} ⟩
+                   suc n                 <⟨ {!!} ⟩
+                   suc n ⋎ suc (max ns)  <⟨ {!!} ⟩
+                   suc (n ⋎ max ns)      ≈⟨ refl ⟩
+                   pa 0 (n ⋎ max ns)     ■
+majorisation-proj (suc i) = {!!}
+
+-- majorisation-lemma : {n : ℕ} → (e : PRF n) → ⟦ e ⟧ ≺ ack
+-- majorisation-lemma zero       = majorisation-zero
+-- majorisation-lemma suc        = majorisation-suc
+-- majorisation-lemma (proj i)   = majorisation-proj i
+-- majorisation-lemma (comp e x) = {!!}
+-- majorisation-lemma (rec e e₁) = {!!}
 ```
