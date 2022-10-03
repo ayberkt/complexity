@@ -20,6 +20,7 @@ open import Data.Unit hiding (_≤_)
 open import Data.Fin using (Fin; zero; suc)
 open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Data.Product
+open import Function
 open import Relation.Nullary
 
 Type₀ = Set₀
@@ -37,6 +38,17 @@ natrec z s (suc n)  = s n (natrec z s n)
 data Vec (A : Type₀) : ℕ → Type₀ where
   nil : Vec A 0
   _,_ : ∀ {n} → Vec A n → A → Vec A (suc n)
+
+_⟨$⟩_ : {A B : Type₀} {n : ℕ} → (A → B) → Vec A n → Vec B n
+f ⟨$⟩ nil      = nil
+f ⟨$⟩ (xs , x) = f ⟨$⟩ xs , f x
+
+tail : {n : ℕ} → (Fin (suc n) → ℕ) → Fin n → ℕ
+tail f = f ∘ suc
+
+fin-map-to-vec : {n : ℕ} → (Fin n → ℕ) → Vec ℕ n
+fin-map-to-vec {zero}  p = nil
+fin-map-to-vec {suc n} p = fin-map-to-vec (tail p) , p zero
 ```
 
 ## Definition of the PRF syntax
@@ -248,8 +260,16 @@ majorisation-proj (suc i) = 0 , †
       ■
 
 majorisation-comp : {m n : ℕ} (e : PRF n) (es : Vec (PRF m) n)
+                  → ⟦ e ⟧ ≺ ack
+                  → ((i : Fin n) → ⟦ es [ i ] ⟧ ≺ ack)
                   → ⟦ comp e es ⟧ ≺ ack
-majorisation-comp e es = {!!}
+majorisation-comp {m = m} {n} e es φ ψ = ? , ?
+  where
+    k : ℕ
+    k = proj₁ φ
+
+    ks : Vec ℕ n
+    ks = fin-map-to-vec (proj₁ ∘ ψ)
 
 -- majorisation-lemma : {n : ℕ} → (e : PRF n) → ⟦ e ⟧ ≺ ack
 -- majorisation-lemma zero        = majorisation-zero
