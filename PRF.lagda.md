@@ -13,6 +13,7 @@ module PRF where
 
 open import Data.Nat
 open import Data.Bool hiding (_≤_; _≤?_; _<?_; _<_)
+open import Data.Sum
 open import Data.Nat.Properties
 open import Data.Empty
 open import Data.Unit hiding (_≤_)
@@ -77,7 +78,7 @@ prf-add = rec (proj zero) (comp suc (nil , proj (suc zero)))
 ```
 
 ```
-open ≡-Reasoning
+open ≡-Reasoning hiding (begin_)
 
 PRF-add-correct : ∀ m n → ⟦ prf-add ⟧ ((nil , m) , n) ≡ m + n
 PRF-add-correct m zero = sym (+-identityʳ m)
@@ -160,10 +161,24 @@ m ⋎ n with m <? n
 ⋎-upper-right m n | no p           = ≮⇒≥ p
 ⋎-upper-right m n | true because p = ≤-reflexive refl
 
-suc-preserves-⋎ : (m n : ℕ) → suc m ⋎ suc n ≤ suc (m ⋎ n)
-suc-preserves-⋎ zero    zero    = ≤-reflexive refl
-suc-preserves-⋎ zero    (suc n) = {!!}
-suc-preserves-⋎ (suc m) n       = {!!}
+suc-preserves-⋎-⇒ : (m n : ℕ) → suc m ⋎ suc n ≤ suc (m ⋎ n)
+suc-preserves-⋎-⇒ zero    zero    = ≤-reflexive refl
+suc-preserves-⋎-⇒ zero    (suc n) = ≤-reflexive refl
+suc-preserves-⋎-⇒ (suc m) zero    = ≤-reflexive refl
+suc-preserves-⋎-⇒ (suc m) (suc n) with suc (suc m) <? suc (suc n)
+suc-preserves-⋎-⇒ (suc m) (suc n) | no  _ = s≤s (⋎-upper-left  (suc m) (suc n))
+suc-preserves-⋎-⇒ (suc m) (suc n) | yes _ = s≤s (⋎-upper-right (suc m) (suc n))
+
+suc-preserves-⋎-⇐ : (m n : ℕ) → suc (m ⋎ n) ≤ suc m ⋎ suc n
+suc-preserves-⋎-⇐ zero    zero            = ≤-reflexive refl
+suc-preserves-⋎-⇐ zero    (suc n)         = ≤-reflexive refl
+suc-preserves-⋎-⇐ (suc m) zero            = ≤-reflexive refl
+suc-preserves-⋎-⇐ (suc m) (suc n) with suc m <? suc n
+suc-preserves-⋎-⇐ (suc m) (suc n) | no  _ = ⋎-upper-left  (suc (suc m)) (suc (suc n))
+suc-preserves-⋎-⇐ (suc m) (suc n) | yes p = ⋎-upper-right (suc (suc m)) (suc (suc n))
+
+suc-preserves-⋎ : (m n : ℕ) → suc (m ⋎ n) ≡ suc m ⋎ suc n
+suc-preserves-⋎ m n = ≤-antisym (suc-preserves-⋎-⇐ m n) (suc-preserves-⋎-⇒ m n)
 ```
 
 ```agda
@@ -213,18 +228,33 @@ majorisation-proj : {n : ℕ} → (i : Fin n) → ⟦ proj i ⟧ ≺ ack
 majorisation-proj {n = n} zero    = 0 , †
   where
     † : (ns : Vec ℕ (suc _)) → ⟦ proj zero ⟧ ns < ack ((nil , 0) , max ns)
-    † (ns , n) = begin-strict
-                   n                     <⟨ {!!} ⟩
-                   suc n                 <⟨ {!!} ⟩
-                   suc n ⋎ suc (max ns)  <⟨ {!!} ⟩
-                   suc (n ⋎ max ns)      ≈⟨ refl ⟩
-                   pa 0 (n ⋎ max ns)     ■
-majorisation-proj (suc i) = {!!}
+    † (ns , n) =
+      begin-strict
+        n                     <⟨ ≤-reflexive refl ⟩
+        suc n                 ≤⟨ m≤n⇒m<n∨m≡n (⋎-upper-left (suc n) (suc (max ns))) ⟩
+        suc n ⋎ suc (max ns)  ≈⟨ sym (suc-preserves-⋎ n (max ns)) ⟩
+        suc (n ⋎ max ns)      ≈⟨ refl ⟩
+        pa 0 (n ⋎ max ns)     ■
+majorisation-proj (suc i) = 0 , †
+  where
+    † : (ns : Vec ℕ (suc _)) → ⟦ proj (suc i) ⟧ ns < ack ((nil , 0) , max ns)
+    † (ns , n) =
+      begin-strict
+        ns [ i ]            ≤⟨ m≤n⇒m<n∨m≡n (max-gives-upper-bound ns i) ⟩
+        max ns              ≤⟨ m≤n⇒m<n∨m≡n (⋎-upper-right n (max ns))   ⟩
+        n ⋎ max ns          <⟨ n<1+n (n ⋎ max ns)                       ⟩
+        suc (n ⋎ max ns)    ≈⟨ refl ⟩
+        pa 0 (max (ns , n))
+      ■
+
+majorisation-comp : {m n : ℕ} (e : PRF n) (es : Vec (PRF m) n)
+                  → ⟦ comp e es ⟧ ≺ ack
+majorisation-comp e es = {!!}
 
 -- majorisation-lemma : {n : ℕ} → (e : PRF n) → ⟦ e ⟧ ≺ ack
--- majorisation-lemma zero       = majorisation-zero
--- majorisation-lemma suc        = majorisation-suc
--- majorisation-lemma (proj i)   = majorisation-proj i
--- majorisation-lemma (comp e x) = {!!}
--- majorisation-lemma (rec e e₁) = {!!}
+-- majorisation-lemma zero        = majorisation-zero
+-- majorisation-lemma suc         = majorisation-suc
+-- majorisation-lemma (proj i)    = majorisation-proj i
+-- majorisation-lemma (comp e es) = majorisation-comp e es
+-- majorisation-lemma (rec e e₁)  = {!!}
 ```
