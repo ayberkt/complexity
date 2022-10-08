@@ -17,7 +17,7 @@ open import Data.Sum
 open import Data.Nat.Properties
 open import Data.Empty
 open import Data.Unit hiding (_≤_)
-open import Data.Fin using (Fin; zero; suc)
+open import Data.Fin using (Fin; zero; suc; inject₁)
 open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Data.Product
 open import Function
@@ -262,57 +262,72 @@ majorisation-proj (suc i) = 0 , †
         pa 0 (max (ns , n))
       ■
 
-max-of : {n : ℕ} → n > 0 → Vec (ℕ → ℕ) n → ℕ → Fin n
-max-of () nil n
-max-of φ (fs , f) n with f n <? {!apply !}
-max-of φ (fs , f) n | foo = {!!}
+apply⋆ : {A B : Set} {n : ℕ} → Vec (A → B) n → A → Vec B n
+apply⋆ nil      x = nil
+apply⋆ (fs , f) x = apply⋆ fs x , f x
 
-majorisation-comp : {m n : ℕ} (e : PRF n) (es : Vec (PRF m) n)
-                  → ⟦ e ⟧ ≺ ack
-                  → ((i : Fin n) → ⟦ es [ i ] ⟧ ≺ ack)
-                  → ⟦ comp e es ⟧ ≺ ack
-majorisation-comp {m = m} {n} e es φ ψ = s + max (fin-map-to-vec r) + 2 , †
+-- majorisation-comp : {m n : ℕ} (e : PRF n) (es : Vec (PRF m) n)
+--                   → ⟦ e ⟧ ≺ ack
+--                   → ((i : Fin n) → ⟦ es [ i ] ⟧ ≺ ack)
+--                   → ⟦ comp e es ⟧ ≺ ack
+-- majorisation-comp {m = m} {n} e es φ ψ = s + max (fin-map-to-vec r) + 2 , †
+--   where
+--     h : Vec ℕ n → ℕ
+--     h = ⟦ e ⟧
+
+--     𝕘 : Fin n → Vec ℕ m → ℕ
+--     𝕘 i = ⟦ es [ i ] ⟧
+
+--     r : Fin n → ℕ
+--     r i = proj₁ (ψ i)
+
+--     lemma : (i : Fin n) (ns : Vec ℕ m) → 𝕘 i ns < pa (r i) (max ns)
+--     lemma i ns =
+--       begin-strict
+--         𝕘 i ns              <⟨ proj₂ (ψ i) ns ⟩
+--         pa (r i) (max ns)
+--       ■
+
+--     s : ℕ
+--     s = proj₁ φ
+
+--     lemma₀ : (ns : Vec ℕ n) → h ns < pa s (max ns)
+--     lemma₀ ns =
+--       begin-strict
+--         h ns          <⟨ proj₂ φ ns ⟩
+--         pa s (max ns)
+--       ■
+
+--     ks : Vec ℕ n
+--     ks = fin-map-to-vec (proj₁ ∘ ψ)
+
+--     † : (ns : Vec ℕ m)
+--       → ⟦ comp e es ⟧ ns < pa (s + max {!!} + 2) (max ns)
+--     † ns =
+--       begin-strict
+--         h (⟦ es ⟧⋆ ns)               <⟨ lemma₀ (⟦ es ⟧⋆ ns) ⟩
+--         pa s o                       <⟨ {!!} ⟩
+--         pa s (pa o (max ns))         <⟨ pa-lemma s o (max ns) ⟩
+--         pa (s + o + 2) (max ns)
+--       ■
+--         where
+--           o = max (⟦ es ⟧⋆ ns)
+
+majorisation-rec : {n : ℕ}
+                 → (e₀ : PRF n) (e₁ : PRF (suc (suc n)))
+                 → ⟦ e₀ ⟧ ≺ ack
+                 → ⟦ e₁ ⟧ ≺ ack
+                 → ⟦ rec e₀ e₁ ⟧ ≺ ack
+majorisation-rec {n = n} e₀ e₁ (r₀ , μ₀) (r₁ , μ₁) = {!!}
   where
-    h : Vec ℕ n → ℕ
-    h = ⟦ e ⟧
-
-    𝕘 : Fin n → Vec ℕ m → ℕ
-    𝕘 i = ⟦ es [ i ] ⟧
-
-    r : Fin n → ℕ
-    r i = proj₁ (ψ i)
-
-    lemma : (i : Fin n) (ns : Vec ℕ m) → 𝕘 i ns < pa (r i) (max ns)
-    lemma i ns =
-      begin-strict
-        𝕘 i ns              <⟨ proj₂ (ψ i) ns ⟩
-        pa (r i) (max ns)
-      ■
-
-    s : ℕ
-    s = proj₁ φ
-
-    lemma₀ : (ns : Vec ℕ n) → h ns < pa s (max ns)
-    lemma₀ ns =
-      begin-strict
-        h ns          <⟨ proj₂ φ ns ⟩
-        pa s (max ns)
-      ■
-
-    ks : Vec ℕ n
-    ks = fin-map-to-vec (proj₁ ∘ ψ)
-
-    † : (ns : Vec ℕ m)
-      → ⟦ comp e es ⟧ ns < pa (s + max {!!} + 2) (max ns)
-    † ns =
-      begin-strict
-        h (⟦ es ⟧⋆ ns)               <⟨ lemma₀ (⟦ es ⟧⋆ ns) ⟩
-        pa s o                       <⟨ {!!} ⟩
-        pa s (pa o (max ns))         <⟨ pa-lemma s o (max ns) ⟩
-        pa (s + o + 2) (max ns)
-      ■
-        where
-          o = max (⟦ es ⟧⋆ ns)
+    lemma : Σ[ q ∈ ℕ ] ((ns : Vec ℕ n) (n : ℕ) → ⟦ rec e₀ e₁ ⟧ (ns , n) < pa q (n + max ns))
+    lemma = suc (r₀ ⋎ r₁) , †
+      where
+        † : (ns : Vec ℕ n) (k : ℕ) → ⟦ rec e₀ e₁ ⟧ (ns , k) < pa (suc (r₀ ⋎ r₁)) (k + max ns)
+        † ns zero    with r₀ <? r₁
+        † ns zero | no ¬p = {!!}
+        † ns zero | true because proof₁ = {!!}
+        † ns (suc k) = {!!}
 
 -- majorisation-lemma : {n : ℕ} → (e : PRF n) → ⟦ e ⟧ ≺ ack
 -- majorisation-lemma zero        = majorisation-zero
