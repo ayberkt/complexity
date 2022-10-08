@@ -142,6 +142,9 @@ pa-addition (suc n) = pa 1 (suc n)       ≡⟨ refl                        ⟩
                       pa 0 (pa 1 n)      ≡⟨ cong (pa 0) (pa-addition n) ⟩
                       pa 0 (suc (suc n)) ≡⟨ refl                        ⟩
                       suc (suc (suc n)) ∎
+
+pa-lemma : (r s y : ℕ) → pa r (pa s y) < pa (r + s + 2) y
+pa-lemma r s y = {!r!}
 ```
 
 ```agda
@@ -259,17 +262,57 @@ majorisation-proj (suc i) = 0 , †
         pa 0 (max (ns , n))
       ■
 
+max-of : {n : ℕ} → n > 0 → Vec (ℕ → ℕ) n → ℕ → Fin n
+max-of () nil n
+max-of φ (fs , f) n with f n <? {!apply !}
+max-of φ (fs , f) n | foo = {!!}
+
 majorisation-comp : {m n : ℕ} (e : PRF n) (es : Vec (PRF m) n)
                   → ⟦ e ⟧ ≺ ack
                   → ((i : Fin n) → ⟦ es [ i ] ⟧ ≺ ack)
                   → ⟦ comp e es ⟧ ≺ ack
-majorisation-comp {m = m} {n} e es φ ψ = ? , ?
+majorisation-comp {m = m} {n} e es φ ψ = s + max (fin-map-to-vec r) + 2 , †
   where
-    k : ℕ
-    k = proj₁ φ
+    h : Vec ℕ n → ℕ
+    h = ⟦ e ⟧
+
+    𝕘 : Fin n → Vec ℕ m → ℕ
+    𝕘 i = ⟦ es [ i ] ⟧
+
+    r : Fin n → ℕ
+    r i = proj₁ (ψ i)
+
+    lemma : (i : Fin n) (ns : Vec ℕ m) → 𝕘 i ns < pa (r i) (max ns)
+    lemma i ns =
+      begin-strict
+        𝕘 i ns              <⟨ proj₂ (ψ i) ns ⟩
+        pa (r i) (max ns)
+      ■
+
+    s : ℕ
+    s = proj₁ φ
+
+    lemma₀ : (ns : Vec ℕ n) → h ns < pa s (max ns)
+    lemma₀ ns =
+      begin-strict
+        h ns          <⟨ proj₂ φ ns ⟩
+        pa s (max ns)
+      ■
 
     ks : Vec ℕ n
     ks = fin-map-to-vec (proj₁ ∘ ψ)
+
+    † : (ns : Vec ℕ m)
+      → ⟦ comp e es ⟧ ns < pa (s + max {!!} + 2) (max ns)
+    † ns =
+      begin-strict
+        h (⟦ es ⟧⋆ ns)               <⟨ lemma₀ (⟦ es ⟧⋆ ns) ⟩
+        pa s o                       <⟨ {!!} ⟩
+        pa s (pa o (max ns))         <⟨ pa-lemma s o (max ns) ⟩
+        pa (s + o + 2) (max ns)
+      ■
+        where
+          o = max (⟦ es ⟧⋆ ns)
 
 -- majorisation-lemma : {n : ℕ} → (e : PRF n) → ⟦ e ⟧ ≺ ack
 -- majorisation-lemma zero        = majorisation-zero
