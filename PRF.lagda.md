@@ -144,7 +144,7 @@ pa-addition (suc n) = pa 1 (suc n)       ≡⟨ refl                        ⟩
                       suc (suc (suc n)) ∎
 
 pa-lemma : (r s y : ℕ) → pa r (pa s y) < pa (r + s + 2) y
-pa-lemma r s y = {!r!}
+pa-lemma r s y = {!!}
 ```
 
 ```agda
@@ -194,6 +194,17 @@ suc-preserves-⋎-⇐ (suc m) (suc n) | yes p = ⋎-upper-right (suc (suc m)) (s
 
 suc-preserves-⋎ : (m n : ℕ) → suc (m ⋎ n) ≡ suc m ⋎ suc n
 suc-preserves-⋎ m n = ≤-antisym (suc-preserves-⋎-⇐ m n) (suc-preserves-⋎-⇒ m n)
+```
+
+## Some properties
+
+```agda
+pa-property-1 : (n : ℕ) → pa 1 n ≡ suc (suc n)
+pa-property-1 zero = refl
+pa-property-1 (suc n) = cong suc (pa-property-1 n)
+
+-- pa-property-2 : (n : ℕ) → pa 2 n = (2 * n) + 3
+-- pa-property-2 = ?
 ```
 
 ```agda
@@ -324,9 +335,13 @@ majorisation-rec {n = n} e₀ e₁ (r₀ , μ₀) (r₁ , μ₁) = {!!}
     lemma = suc (r₀ ⋎ r₁) , †
       where
         † : (ns : Vec ℕ n) (k : ℕ) → ⟦ rec e₀ e₁ ⟧ (ns , k) < pa (suc (r₀ ⋎ r₁)) (k + max ns)
-        † ns zero    with r₀ <? r₁
+        † ns zero with r₀ <? r₁
         † ns zero | no ¬p = {!!}
-        † ns zero | true because proof₁ = {!!}
+        † ns zero | yes p = begin-strict
+                             ⟦ e₀ ⟧ ns                        <⟨ μ₀ ns ⟩
+                             pa r₀ (max ns)                   <⟨ {!!} ⟩
+                             pa r₁ (iter (max ns) (pa r₁) 1)
+                            ■
         † ns (suc k) = {!!}
 
 -- majorisation-lemma : {n : ℕ} → (e : PRF n) → ⟦ e ⟧ ≺ ack
